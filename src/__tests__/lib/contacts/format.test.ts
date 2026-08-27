@@ -1,9 +1,10 @@
 import {
-  addressLine,
+  addressLocalityLine,
   avatarHue,
   formatTimestamp,
   initials,
   jobLine,
+  sortAddresses,
 } from "@/lib/contacts/format";
 import { makeContact } from "../../mocks/handlers";
 
@@ -49,22 +50,32 @@ describe("jobLine", () => {
   });
 });
 
-describe("addressLine", () => {
-  it("skips the parts that are not filled in", () => {
-    expect(addressLine(makeContact())).toBe("San Francisco, CA, USA");
+describe("address formatting", () => {
+  it("pairs city and state with the postal code", () => {
+    expect(addressLocalityLine(makeContact().addresses[0])).toBe(
+      "San Francisco, CA 94105",
+    );
   });
 
-  it("pairs the state with the postal code", () => {
+  it("returns null when locality fields are empty", () => {
     expect(
-      addressLine(makeContact({ address: "1 Market St", postal_code: "94105" })),
-    ).toBe("1 Market St, San Francisco, CA 94105, USA");
-  });
-
-  it("returns null when there is no address at all", () => {
-    expect(
-      addressLine(
-        makeContact({ city: null, state: null, country: null, postal_code: null }),
-      ),
+      addressLocalityLine({
+        ...makeContact().addresses[0],
+        city: null,
+        state: null,
+        postal_code: null,
+      }),
     ).toBeNull();
+  });
+
+  it("groups addresses Home, Work, then Other", () => {
+    const home = makeContact().addresses[0];
+    expect(
+      sortAddresses([
+        { ...home, id: 3, type: "Other" },
+        { ...home, id: 2, type: "Work" },
+        home,
+      ]).map((address) => address.type),
+    ).toEqual(["Home", "Work", "Other"]);
   });
 });

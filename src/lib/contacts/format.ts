@@ -1,4 +1,4 @@
-import type { Contact } from "./types";
+import type { Address, Contact } from "./types";
 
 /** Presentation helpers shared by the list, the detail page, and the cards. */
 
@@ -43,14 +43,20 @@ export function jobLine(contact: Contact): string | null {
   return contact.job_title ?? contact.company ?? null;
 }
 
-/** Single-line postal address, skipping the parts that are not filled in. */
-export function addressLine(contact: Contact): string | null {
-  const parts = [
-    contact.address,
-    contact.city,
-    [contact.state, contact.postal_code].filter(Boolean).join(" "),
-    contact.country,
-  ].filter((part): part is string => Boolean(part && part.trim()));
+/** City/region/postal line for a nested postal address. */
+export function addressLocalityLine(address: Address): string | null {
+  const locality = [address.city, address.state].filter(Boolean).join(", ");
+  const line = [locality, address.postal_code].filter(Boolean).join(" ");
+  return line || null;
+}
 
-  return parts.length ? parts.join(", ") : null;
+const ADDRESS_TYPE_ORDER = { Home: 0, Work: 1, Other: 2 } as const;
+
+/** Stable display order requested by the challenge: Home, then Work, then Other. */
+export function sortAddresses(addresses: Address[]): Address[] {
+  return [...addresses].sort(
+    (left, right) =>
+      ADDRESS_TYPE_ORDER[left.type] - ADDRESS_TYPE_ORDER[right.type] ||
+      left.id - right.id,
+  );
 }

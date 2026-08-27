@@ -156,8 +156,69 @@ describe("ContactForm", () => {
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByLabelText(/^email/i)).toHaveValue("ada@example.com");
-    // Nulls become empty inputs rather than the string "null".
-    expect(screen.getByLabelText(/street address/i)).toHaveValue("");
+    expect(screen.getByLabelText(/address 1 type/i)).toHaveValue("Home");
+    expect(screen.getByLabelText(/street address/i)).toHaveValue("1 Market St");
+  });
+
+  it("adds, edits, removes, and serializes arbitrary address rows", async () => {
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    renderForm(action);
+
+    await userEvent.click(screen.getByRole("button", { name: /add address/i }));
+    await userEvent.selectOptions(screen.getByLabelText(/address 1 type/i), "Work");
+    await userEvent.type(screen.getByLabelText(/street address/i), "88 Market St");
+    await userEvent.click(screen.getByRole("button", { name: /add address/i }));
+    await userEvent.type(
+      screen.getByLabelText(/address 2 street address/i),
+      "PO Box 42",
+    );
+    await userEvent.click(screen.getByRole("button", { name: /remove address 1/i }));
+    await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
+
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    expect(JSON.parse(String(action.mock.calls[0][1].get("addresses")))).toEqual([
+      expect.objectContaining({ type: "Home", address: "PO Box 42" }),
+    ]);
+  });
+
+  it("restores address drafts returned after a failed save", async () => {
+    const action = jest.fn(
+      async (): Promise<FormState> => ({
+        status: "error",
+        message: "Please fix the highlighted fields.",
+        fieldErrors: { addresses: "Address 1: Street address is required" },
+        values: {
+          first_name: "Ada",
+          addresses: [
+            {
+              type: "Other",
+              address: "Preserved St",
+              city: "Oakland",
+              state: "CA",
+              postal_code: "",
+              country: "USA",
+            },
+          ],
+        },
+      }),
+    );
+    renderForm(action);
+
+    await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/street address/i)).toHaveValue("Preserved St"),
+    );
+    const serialized = document.querySelector<HTMLInputElement>(
+      'input[name="addresses"]',
+    )?.value;
+    expect(JSON.parse(String(serialized))).toEqual([
+      expect.objectContaining({ type: "Other", address: "Preserved St" }),
+    ]);
+    expect(screen.getByLabelText(/address 1 type/i)).toHaveValue("Other");
+    expect(screen.getByText(/Address 1: Street address is required/)).toBeInTheDocument();
   });
 
   it("submits the entered values to the action", async () => {
