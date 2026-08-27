@@ -7,6 +7,7 @@ import {
   apiErrorMessage,
   createContact,
   deleteContact,
+  getContact,
   replaceContact,
   toFieldErrors,
 } from "@/lib/contacts/api";
@@ -15,6 +16,10 @@ import {
   formDataToValues,
   zodFieldErrors,
 } from "@/lib/contacts/schema";
+import {
+  PhotoValidationError,
+  resolveContactPhoto,
+} from "@/lib/contacts/photo.server";
 import type { Contact, FormState } from "@/lib/contacts/types";
 
 /** Mutations for the contacts UI. Every one of these runs only on the server. */
@@ -52,11 +57,30 @@ export async function saveContactAction(
 
   let saved: Contact;
   try {
+    const photoEntry = formData.get("photo");
+    const hasReplacement =
+      typeof photoEntry !== "string" && Boolean(photoEntry?.size);
+    const removeRequested = formData.get("remove_photo") === "true";
+    const current =
+      contactId !== null && !hasReplacement && !removeRequested
+        ? await getContact(contactId)
+        : null;
+    const photo = await resolveContactPhoto(formData, current?.photo ?? null);
+    const input = { ...parsed.data, photo };
+
     saved =
       contactId === null
-        ? await createContact(parsed.data)
-        : await replaceContact(contactId, parsed.data);
+        ? await createContact(input)
+        : await replaceContact(contactId, input);
   } catch (error) {
+    if (error instanceof PhotoValidationError) {
+      return {
+        status: "error",
+        message: "Please choose a valid profile photo.",
+        fieldErrors: { photo: error.message },
+        values,
+      };
+    }
     if (error instanceof ApiUnreachableError) {
       return { status: "error", message: UNREACHABLE, values };
     }
