@@ -31,6 +31,7 @@ function validFormData(): FormData {
   for (const field of CONTACT_FIELDS) {
     formData.set(field.name, values[field.name] ?? "");
   }
+  formData.set("addresses", "[]");
   formData.set("remove_photo", "false");
   return formData;
 }
@@ -63,6 +64,43 @@ describe("saveContactAction photo preservation", () => {
     expect(replaceContact).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ photo: null }),
+    );
+  });
+
+  it("sends validated addresses through PUT without regressing photo preservation", async () => {
+    const formData = validFormData();
+    formData.set(
+      "addresses",
+      JSON.stringify([
+        {
+          type: "Work",
+          address: " 88 Market St ",
+          city: "San Francisco",
+          state: "CA",
+          postal_code: "94105",
+          country: "USA",
+        },
+      ]),
+    );
+    jest.mocked(getContact).mockResolvedValue(makeContact({ photo: PHOTO }));
+
+    await saveContactAction(1, EMPTY_FORM_STATE, formData);
+
+    expect(replaceContact).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        photo: PHOTO,
+        addresses: [
+          {
+            type: "Work",
+            address: "88 Market St",
+            city: "San Francisco",
+            state: "CA",
+            postal_code: "94105",
+            country: "USA",
+          },
+        ],
+      }),
     );
   });
 });

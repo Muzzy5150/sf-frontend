@@ -1,11 +1,12 @@
 import {
   CONTACT_FIELDS,
+  addressDraftsFromUnknown,
   contactInputSchema,
   formDataToValues,
   zodFieldErrors,
 } from "@/lib/contacts/schema";
 
-function values(overrides: Record<string, string> = {}) {
+function values(overrides: Record<string, unknown> = {}) {
   return {
     first_name: "Ada",
     last_name: "Lovelace",
@@ -13,11 +14,7 @@ function values(overrides: Record<string, string> = {}) {
     phone: "",
     company: "",
     job_title: "",
-    address: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "",
+    addresses: [],
     notes: "",
     ...overrides,
   };
@@ -59,13 +56,89 @@ describe("contactInputSchema", () => {
 
   it("enforces the API's length limits", () => {
     const result = contactInputSchema.safeParse(
-      values({ first_name: "a".repeat(101), postal_code: "9".repeat(21) }),
+      values({
+        first_name: "a".repeat(101),
+        addresses: [
+          {
+            type: "Home",
+            address: "1 Market St",
+            city: "",
+            state: "",
+            postal_code: "9".repeat(21),
+            country: "",
+          },
+        ],
+      }),
     );
 
     expect(zodFieldErrors(result.error!)).toEqual({
       first_name: "First name must be 100 characters or fewer",
-      postal_code: "Postal code must be 20 characters or fewer",
+      addresses: "Address 1: Postal code must be 20 characters or fewer",
     });
+  });
+
+  it("validates and normalizes nested address rows", () => {
+    const parsed = contactInputSchema.parse(
+      values({
+        addresses: [
+          {
+            type: "Work",
+            address: "  88 Market St  ",
+            city: "  San Francisco ",
+            state: "",
+            postal_code: "94105",
+            country: "USA",
+          },
+        ],
+      }),
+    );
+
+    expect(parsed.addresses).toEqual([
+      {
+        type: "Work",
+        address: "88 Market St",
+        city: "San Francisco",
+        state: null,
+        postal_code: "94105",
+        country: "USA",
+      },
+    ]);
+  });
+
+  it("rejects an invalid address type and a blank street", () => {
+    const invalidType = contactInputSchema.safeParse(
+      values({
+        addresses: [
+          {
+            type: "Vacation",
+            address: "1 Main St",
+            city: "",
+            state: "",
+            postal_code: "",
+            country: "",
+          },
+        ],
+      }),
+    );
+    const blankStreet = contactInputSchema.safeParse(
+      values({
+        addresses: [
+          {
+            type: "Home",
+            address: " ",
+            city: "",
+            state: "",
+            postal_code: "",
+            country: "",
+          },
+        ],
+      }),
+    );
+
+    expect(zodFieldErrors(invalidType.error!).addresses).toMatch(/Home, Work, or Other/);
+    expect(zodFieldErrors(blankStreet.error!).addresses).toBe(
+      "Address 1: Street address is required",
+    );
   });
 });
 
@@ -74,14 +147,45 @@ describe("formDataToValues", () => {
     const formData = new FormData();
     formData.set("first_name", "Grace");
     formData.set("email", "grace@example.com");
+    formData.set(
+      "addresses",
+      JSON.stringify([
+        {
+          type: "Home",
+          address: "1 Main St",
+          city: "",
+          state: "",
+          postal_code: "",
+          country: "",
+        },
+      ]),
+    );
     formData.set("ignored", "nope");
 
     const extracted = formDataToValues(formData);
 
     expect(extracted.first_name).toBe("Grace");
     expect(extracted.last_name).toBe("");
+    expect(extracted.addresses).toEqual([
+      expect.objectContaining({ type: "Home", address: "1 Main St" }),
+    ]);
     expect(Object.keys(extracted).sort()).toEqual(
-      CONTACT_FIELDS.map((field) => field.name).sort(),
+      [...CONTACT_FIELDS.map((field) => field.name), "addresses"].sort(),
     );
+  });
+
+  it("preserves incomplete address drafts after failed validation", () => {
+    expect(
+      addressDraftsFromUnknown([
+        {
+          type: "Other",
+          address: "",
+          city: "Somewhere",
+          state: "",
+          postal_code: "",
+          country: "",
+        },
+      ]),
+    ).toHaveLength(1);
   });
 });

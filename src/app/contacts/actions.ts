@@ -12,6 +12,7 @@ import {
   toFieldErrors,
 } from "@/lib/contacts/api";
 import {
+  addressDraftsFromUnknown,
   contactInputSchema,
   formDataToValues,
   zodFieldErrors,
@@ -43,9 +44,13 @@ export async function saveContactAction(
   _prevState: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  const values = formDataToValues(formData);
+  const rawValues = formDataToValues(formData);
+  const values = {
+    ...rawValues,
+    addresses: addressDraftsFromUnknown(rawValues.addresses),
+  };
 
-  const parsed = contactInputSchema.safeParse(values);
+  const parsed = contactInputSchema.safeParse(rawValues);
   if (!parsed.success) {
     return {
       status: "error",

@@ -10,6 +10,7 @@ import {
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { AlertCircle, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import AddressFields from "./AddressFields";
 import ContactAvatar from "./ContactAvatar";
 import Field from "@/components/ui/Field";
 import Button, { buttonClasses } from "@/components/ui/Button";
@@ -24,6 +25,7 @@ import {
 } from "@/lib/contacts/photo";
 import {
   EMPTY_FORM_STATE,
+  type AddressDraft,
   type Contact,
   type FormState,
 } from "@/lib/contacts/types";
@@ -32,6 +34,17 @@ export type ContactFormAction = (
   state: FormState,
   formData: FormData,
 ) => Promise<FormState>;
+
+function addressDrafts(contact?: Contact): AddressDraft[] {
+  return (contact?.addresses ?? []).map((address) => ({
+    type: address.type,
+    address: address.address,
+    city: address.city ?? "",
+    state: address.state ?? "",
+    postal_code: address.postal_code ?? "",
+    country: address.country ?? "",
+  }));
+}
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -128,6 +141,7 @@ export default function ContactForm({
   }
 
   const photoError = localPhotoError ?? state.fieldErrors?.photo;
+  const formAddresses = state.values?.addresses ?? addressDrafts(contact);
   const avatarContact = {
     first_name: state.values?.first_name ?? contact?.first_name ?? "New",
     last_name: state.values?.last_name ?? contact?.last_name ?? "contact",
@@ -249,6 +263,12 @@ export default function ContactForm({
           </div>
         </fieldset>
       ))}
+
+      <AddressFields
+        key={JSON.stringify(formAddresses)}
+        initialAddresses={formAddresses}
+        error={state.fieldErrors?.addresses}
+      />
 
       <div className="flex items-center gap-2 border-t border-hairline pt-4">
         <SubmitButton label={submitLabel} />
