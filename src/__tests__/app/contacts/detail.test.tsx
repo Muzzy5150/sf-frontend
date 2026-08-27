@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import ContactDetailPage from "@/app/contacts/[id]/page";
 import { getContact } from "@/lib/contacts/api";

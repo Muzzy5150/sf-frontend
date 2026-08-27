@@ -5,6 +5,9 @@ import {
   type AddressInput,
   type ContactInput,
   type ContactTextField,
+  type CryptoWalletDraft,
+  type CryptoWalletInput,
+  WALLET_CHAINS,
 } from "./types";
 
 export type { ContactTextField } from "./types";
@@ -62,6 +65,16 @@ const addressDraftSchema = z.object({
   country: z.string(),
 });
 
+export const cryptoWalletInputSchema = z.object({
+  chain: z.enum(WALLET_CHAINS, "Choose a supported network"),
+  address: requiredText(256, "Wallet address"),
+}) satisfies z.ZodType<CryptoWalletInput, unknown>;
+
+const cryptoWalletDraftSchema = z.object({
+  chain: z.enum(WALLET_CHAINS),
+  address: z.string(),
+});
+
 export const contactInputSchema = z.object({
   first_name: requiredText(100, "First name"),
   last_name: requiredText(100, "Last name"),
@@ -76,6 +89,7 @@ export const contactInputSchema = z.object({
   company: optionalText(200, "Company"),
   job_title: optionalText(200, "Job title"),
   addresses: z.array(addressInputSchema),
+  crypto_wallets: z.array(cryptoWalletInputSchema),
   notes: z
     .string()
     .trim()
@@ -215,6 +229,7 @@ export function formDataToValues(formData: FormData): ContactFormValues {
   ) as Record<ContactTextField, string>;
 
   const serializedAddresses = String(formData.get("addresses") ?? "[]");
+  const serializedWallets = String(formData.get("crypto_wallets") ?? "[]");
   let addresses: unknown;
   try {
     addresses = JSON.parse(serializedAddresses);
@@ -222,15 +237,28 @@ export function formDataToValues(formData: FormData): ContactFormValues {
     addresses = serializedAddresses;
   }
 
-  return { ...textValues, addresses };
+  let crypto_wallets: unknown;
+  try {
+    crypto_wallets = JSON.parse(serializedWallets);
+  } catch {
+    crypto_wallets = serializedWallets;
+  }
+
+  return { ...textValues, addresses, crypto_wallets };
 }
 
 export type ContactFormValues = Record<ContactTextField, string> & {
   addresses: unknown;
+  crypto_wallets: unknown;
 };
 
 /** Preserve editable address rows after failed validation without trusting JSON shape. */
 export function addressDraftsFromUnknown(value: unknown): AddressDraft[] {
   const parsed = z.array(addressDraftSchema).safeParse(value);
+  return parsed.success ? parsed.data : [];
+}
+
+export function walletDraftsFromUnknown(value: unknown): CryptoWalletDraft[] {
+  const parsed = z.array(cryptoWalletDraftSchema).safeParse(value);
   return parsed.success ? parsed.data : [];
 }

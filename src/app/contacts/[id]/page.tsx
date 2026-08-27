@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, Pencil } from "lucide-react";
 import ContactAddresses from "@/components/contacts/ContactAddresses";
+import ContactWallets from "@/components/contacts/ContactWallets";
 import ContactAvatar from "@/components/contacts/ContactAvatar";
 import DeleteContactButton from "@/components/contacts/DeleteContactButton";
 import { buttonClasses } from "@/components/ui/Button";
@@ -104,6 +105,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
         <Row label="Addresses">
           {contact.addresses.length ? (
             <ContactAddresses addresses={contact.addresses} />
+          ) : null}
+        </Row>
+        <Row label="Crypto wallets">
+          {contact.crypto_wallets.length ? (
+            <ContactWallets wallets={contact.crypto_wallets} />
           ) : null}
         </Row>
         <Row label="Notes">

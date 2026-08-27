@@ -183,6 +183,25 @@ describe("ContactForm", () => {
     ]);
   });
 
+  it("adds, selects, and serializes crypto wallets", async () => {
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    renderForm(action);
+
+    await userEvent.click(screen.getByRole("button", { name: /add wallet/i }));
+    await userEvent.selectOptions(screen.getByLabelText(/wallet 1 network/i), "Solana");
+    await userEvent.type(screen.getByLabelText(/wallet 1 address/i), "9xQe-demo");
+    await userEvent.click(screen.getByRole("button", { name: /add wallet/i }));
+    await userEvent.click(screen.getByRole("button", { name: /remove wallet 2/i }));
+    await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
+
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    expect(JSON.parse(String(action.mock.calls[0][1].get("crypto_wallets")))).toEqual([
+      { chain: "Solana", address: "9xQe-demo" },
+    ]);
+  });
+
   it("restores address drafts returned after a failed save", async () => {
     const action = jest.fn(
       async (): Promise<FormState> => ({
