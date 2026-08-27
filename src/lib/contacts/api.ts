@@ -139,6 +139,13 @@ export function toFieldErrors(
         typeof row === "number" ? `Address ${row + 1}: ${issue.msg}` : issue.msg;
       continue;
     }
+    const walletsIndex = issue.loc.indexOf("crypto_wallets");
+    if (walletsIndex >= 0) {
+      const row = issue.loc[walletsIndex + 1];
+      fieldErrors.crypto_wallets ??=
+        typeof row === "number" ? `Wallet ${row + 1}: ${issue.msg}` : issue.msg;
+      continue;
+    }
     const field = issue.loc?.[issue.loc.length - 1];
     if (typeof field === "string" && field !== "body") {
       fieldErrors[field as keyof ContactInput] ??= issue.msg;

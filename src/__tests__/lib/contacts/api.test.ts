@@ -25,6 +25,7 @@ const INPUT: ContactInput = {
   company: null,
   job_title: null,
   addresses: [],
+  crypto_wallets: [],
   notes: null,
   photo: null,
 };

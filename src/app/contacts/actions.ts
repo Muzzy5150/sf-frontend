@@ -15,6 +15,7 @@ import {
   addressDraftsFromUnknown,
   contactInputSchema,
   formDataToValues,
+  walletDraftsFromUnknown,
   zodFieldErrors,
 } from "@/lib/contacts/schema";
 import {
@@ -48,6 +49,7 @@ export async function saveContactAction(
   const values = {
     ...rawValues,
     addresses: addressDraftsFromUnknown(rawValues.addresses),
+    crypto_wallets: walletDraftsFromUnknown(rawValues.crypto_wallets),
   };
 
   const parsed = contactInputSchema.safeParse(rawValues);

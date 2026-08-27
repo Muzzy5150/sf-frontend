@@ -15,6 +15,7 @@ function values(overrides: Record<string, unknown> = {}) {
     company: "",
     job_title: "",
     addresses: [],
+    crypto_wallets: [],
     notes: "",
     ...overrides,
   };
@@ -170,7 +171,11 @@ describe("formDataToValues", () => {
       expect.objectContaining({ type: "Home", address: "1 Main St" }),
     ]);
     expect(Object.keys(extracted).sort()).toEqual(
-      [...CONTACT_FIELDS.map((field) => field.name), "addresses"].sort(),
+      [
+        ...CONTACT_FIELDS.map((field) => field.name),
+        "addresses",
+        "crypto_wallets",
+      ].sort(),
     );
   });
 

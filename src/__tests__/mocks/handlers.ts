@@ -30,6 +30,7 @@ export function makeContact(overrides: Partial<Contact> = {}): Contact {
         country: "USA",
       },
     ],
+    crypto_wallets: [],
     notes: null,
     photo: null,
     created_at: "2026-08-19T17:04:53.743932Z",

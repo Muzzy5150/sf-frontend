@@ -6,6 +6,14 @@
 /** Human-readable address categories accepted by the API. */
 export const ADDRESS_TYPES = ["Home", "Work", "Other"] as const;
 export type AddressType = (typeof ADDRESS_TYPES)[number];
+export const WALLET_CHAINS = [
+  "Bitcoin",
+  "Ethereum",
+  "Solana",
+  "Base",
+  "Polygon",
+] as const;
+export type WalletChain = (typeof WALLET_CHAINS)[number];
 
 /** Address fields accepted by contact create and replacement requests. */
 export interface AddressInput {
@@ -22,6 +30,15 @@ export interface Address extends AddressInput {
   id: number;
 }
 
+export interface CryptoWalletInput {
+  chain: WalletChain;
+  address: string;
+}
+
+export interface CryptoWallet extends CryptoWalletInput {
+  id: number;
+}
+
 /** `ContactRead` — a stored contact, as returned by every contact endpoint. */
 export interface Contact {
   id: number;
@@ -32,6 +49,7 @@ export interface Contact {
   company: string | null;
   job_title: string | null;
   addresses: Address[];
+  crypto_wallets: CryptoWallet[];
   notes: string | null;
   photo: string | null;
   created_at: string;
@@ -42,12 +60,17 @@ export interface Contact {
 /** Every editable field, i.e. `ContactCreate` / `ContactReplace`. */
 export type ContactInput = Omit<
   Contact,
-  "id" | "addresses" | "created_at" | "updated_at" | "full_name"
-> & { addresses: AddressInput[] };
+  | "id"
+  | "addresses"
+  | "crypto_wallets"
+  | "created_at"
+  | "updated_at"
+  | "full_name"
+> & { addresses: AddressInput[]; crypto_wallets: CryptoWalletInput[] };
 
 export type ContactTextField = Exclude<
   keyof ContactInput,
-  "addresses" | "photo"
+  "addresses" | "crypto_wallets" | "photo"
 >;
 
 /** Controlled form representation; optional postal fields stay editable strings. */
@@ -58,6 +81,11 @@ export interface AddressDraft {
   state: string;
   postal_code: string;
   country: string;
+}
+
+export interface CryptoWalletDraft {
+  chain: WalletChain;
+  address: string;
 }
 
 /** `ContactPage` — one page of contacts plus the totals needed to paginate. */
@@ -109,6 +137,7 @@ export type FormState = {
   /** Echo of the submitted values so the form survives a failed round trip. */
   values?: Partial<Record<ContactTextField, string>> & {
     addresses?: AddressDraft[];
+    crypto_wallets?: CryptoWalletDraft[];
   };
 };
 

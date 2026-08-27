@@ -11,6 +11,7 @@ import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { AlertCircle, ImagePlus, Loader2, Trash2 } from "lucide-react";
 import AddressFields from "./AddressFields";
+import CryptoWalletFields from "./CryptoWalletFields";
 import ContactAvatar from "./ContactAvatar";
 import Field from "@/components/ui/Field";
 import Button, { buttonClasses } from "@/components/ui/Button";
@@ -27,6 +28,7 @@ import {
   EMPTY_FORM_STATE,
   type AddressDraft,
   type Contact,
+  type CryptoWalletDraft,
   type FormState,
 } from "@/lib/contacts/types";
 
@@ -43,6 +45,13 @@ function addressDrafts(contact?: Contact): AddressDraft[] {
     state: address.state ?? "",
     postal_code: address.postal_code ?? "",
     country: address.country ?? "",
+  }));
+}
+
+function walletDrafts(contact?: Contact): CryptoWalletDraft[] {
+  return (contact?.crypto_wallets ?? []).map(({ chain, address }) => ({
+    chain,
+    address,
   }));
 }
 
@@ -142,6 +151,7 @@ export default function ContactForm({
 
   const photoError = localPhotoError ?? state.fieldErrors?.photo;
   const formAddresses = state.values?.addresses ?? addressDrafts(contact);
+  const formWallets = state.values?.crypto_wallets ?? walletDrafts(contact);
   const avatarContact = {
     first_name: state.values?.first_name ?? contact?.first_name ?? "New",
     last_name: state.values?.last_name ?? contact?.last_name ?? "contact",
@@ -265,9 +275,15 @@ export default function ContactForm({
       ))}
 
       <AddressFields
-        key={JSON.stringify(formAddresses)}
+        key={`addresses:${JSON.stringify(formAddresses)}`}
         initialAddresses={formAddresses}
         error={state.fieldErrors?.addresses}
+      />
+
+      <CryptoWalletFields
+        key={`wallets:${JSON.stringify(formWallets)}`}
+        initialWallets={formWallets}
+        error={state.fieldErrors?.crypto_wallets}
       />
 
       <div className="flex items-center gap-2 border-t border-hairline pt-4">
