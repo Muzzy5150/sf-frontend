@@ -1,9 +1,12 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ContactForm from "@/components/contacts/ContactForm";
 import { makeContact } from "../mocks/handlers";
 import type { FormState } from "@/lib/contacts/types";
+
+const PHOTO =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgJt0AAAAASUVORK5CYII=";
 
 function renderForm(action: jest.Mock, contact?: ReturnType<typeof makeContact>) {
   return render(
@@ -25,6 +28,37 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText(/^email/i)).toBeRequired();
     expect(screen.getByLabelText(/phone/i)).not.toBeRequired();
     expect(screen.getByLabelText(/notes/i).tagName).toBe("TEXTAREA");
+    expect(screen.getByLabelText(/image file/i)).toHaveAttribute(
+      "accept",
+      "image/jpeg,image/png,image/webp",
+    );
+  });
+
+  it("previews the existing photo and can explicitly remove it", async () => {
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    renderForm(action, makeContact({ photo: PHOTO }));
+
+    expect(
+      screen.getByRole("img", { name: /ada lovelace profile photo/i }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /remove photo/i }));
+    await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
+    await waitFor(() => expect(action).toHaveBeenCalled());
+
+    expect(action.mock.calls[0][1].get("remove_photo")).toBe("true");
+  });
+
+  it("shows immediate feedback for an unsupported image type", () => {
+    renderForm(jest.fn());
+    const file = new File(["gif"], "avatar.gif", { type: "image/gif" });
+
+    fireEvent.change(screen.getByLabelText(/image file/i), {
+      target: { files: [file] },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/JPEG, PNG, or WebP/);
   });
 
   it("prefills from an existing contact", () => {

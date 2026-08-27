@@ -42,7 +42,7 @@ The landing route (`/` redirects here). What to check, top to bottom:
   selector. Both write to the URL, so the state survives a reload and is
   shareable.
 - **Table** — sortable `Name` and `Email` headers (the arrow shows the active
-  column and direction), an initials avatar per row, `Job title at Company` as
+  column and direction), a profile photo or initials avatar per row, `Job title at Company` as
   the subtitle, and per-row pencil (edit) and trash (delete) actions.
 - **Footer row** — `Showing 1–3 of 3` with Previous/Next, both disabled on a
   single page.
@@ -60,7 +60,7 @@ just means an empty database, not a broken app.
 Click a row to get here. It confirms the detail read path works end to end:
 
 - **`< All contacts`** back link to the list.
-- **Header** — avatar, name, and `Job title at Company`, with **Edit**
+- **Header** — circular profile photo (or initials), name, and `Job title at Company`, with **Edit**
   (`/contacts/[id]/edit`) and a destructive **Delete** that asks before it acts.
 - **Field table** — email and phone rendered as `mailto:` / `tel:` links, then
   company, job title, address, and notes. Empty optional fields show `—` rather
@@ -132,9 +132,10 @@ e2e/                      Playwright specs (run against the real API)
 ## Conventions
 
 - **Forms** — one source of truth: `CONTACT_FIELD_GROUPS` in
-  `src/lib/contacts/schema.ts` drives both the rendered fields and the Zod rules,
-  which mirror the API's own limits. Submitting is a real form `action`, so it
-  works before hydration; `useActionState` surfaces what comes back.
+  `src/lib/contacts/schema.ts` drives the text fields and Zod rules, which mirror
+  the API's own limits. Profile photos are validated as JPEG, PNG, or WebP up to
+  2 MB, previewed locally, and encoded by the existing Server Action. Submitting
+  is a real form `action`; `useActionState` surfaces what comes back.
 - **Styling** — Tailwind against semantic CSS variables (`bg-background`,
   `text-muted-foreground`, `border-hairline`, …) defined in `src/app/globals.css`.
   Dark is the default; light lives under `[data-theme="light"]`. Add colours as

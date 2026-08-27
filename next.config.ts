@@ -43,6 +43,10 @@ const gitSha =
 // so it needs a Node runtime. `output: "export"` is deliberately not offered.
 const nextConfig: NextConfig = {
   trailingSlash: true,
+  experimental: {
+    // 2 MB photo limit plus multipart form metadata (Server Actions default to 1 MB).
+    serverActions: { bodySizeLimit: "3mb" },
+  },
   // Hosts allowed to load dev-only resources (/_next/hmr, /_next/static…) when the
   // dev server is reached from something other than localhost — a phone or another
   // machine on the LAN. Matched on hostname alone: ports are ignored, so this has

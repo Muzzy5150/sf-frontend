@@ -30,6 +30,7 @@ describe("contactInputSchema", () => {
     expect(parsed.email).toBe("ada@example.com");
     expect(parsed.phone).toBeNull();
     expect(parsed.notes).toBeNull();
+    expect(parsed.photo).toBeNull();
   });
 
   it("trims what the user typed", () => {
