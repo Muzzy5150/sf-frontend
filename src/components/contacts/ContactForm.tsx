@@ -1,6 +1,12 @@
 "use client";
 
-import { type ChangeEvent, useActionState, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { AlertCircle, ImagePlus, Loader2, Trash2 } from "lucide-react";
@@ -59,10 +65,17 @@ export default function ContactForm({
   const [state, formAction] = useActionState(action, EMPTY_FORM_STATE);
   const [photoPreview, setPhotoPreview] = useState(contact?.photo ?? null);
   const [removePhoto, setRemovePhoto] = useState(false);
-  const [localPhotoError, setLocalPhotoError] = useState<
-    string | null | undefined
-  >(undefined);
+  const [localPhotoError, setLocalPhotoError] = useState<string | null>(null);
   const photoInput = useRef<HTMLInputElement>(null);
+  const photoReader = useRef<FileReader | null>(null);
+
+  useEffect(
+    () => () => {
+      photoReader.current?.abort();
+      photoReader.current = null;
+    },
+    [],
+  );
 
   function valueFor(name: ContactTextField): string {
     return state.values?.[name] ?? contact?.[name] ?? "";
@@ -70,6 +83,9 @@ export default function ContactForm({
 
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
+    const pendingReader = photoReader.current;
+    photoReader.current = null;
+    pendingReader?.abort();
     setRemovePhoto(false);
 
     if (!file) {
@@ -86,10 +102,15 @@ export default function ContactForm({
     }
 
     const reader = new FileReader();
+    photoReader.current = reader;
     reader.onload = () => {
+      if (photoReader.current !== reader) return;
+      photoReader.current = null;
       if (typeof reader.result === "string") setPhotoPreview(reader.result);
     };
     reader.onerror = () => {
+      if (photoReader.current !== reader) return;
+      photoReader.current = null;
       setLocalPhotoError("That image could not be read. Choose another file.");
       setPhotoPreview(contact?.photo ?? null);
     };
@@ -97,14 +118,16 @@ export default function ContactForm({
   }
 
   function clearPhoto() {
+    const pendingReader = photoReader.current;
+    photoReader.current = null;
+    pendingReader?.abort();
     if (photoInput.current) photoInput.current.value = "";
     setPhotoPreview(null);
     setRemovePhoto(Boolean(contact?.photo));
     setLocalPhotoError(null);
   }
 
-  const photoError =
-    localPhotoError === undefined ? state.fieldErrors?.photo : localPhotoError;
+  const photoError = localPhotoError ?? state.fieldErrors?.photo;
   const avatarContact = {
     first_name: state.values?.first_name ?? contact?.first_name ?? "New",
     last_name: state.values?.last_name ?? contact?.last_name ?? "contact",
