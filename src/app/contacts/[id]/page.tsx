@@ -102,7 +102,9 @@ export default async function ContactDetailPage({ params }: PageProps) {
         <Row label="Company">{contact.company}</Row>
         <Row label="Job title">{contact.job_title}</Row>
         <Row label="Addresses">
-          <ContactAddresses addresses={contact.addresses} />
+          {contact.addresses.length ? (
+            <ContactAddresses addresses={contact.addresses} />
+          ) : null}
         </Row>
         <Row label="Notes">
           {contact.notes ? (
